@@ -18,8 +18,8 @@
         .pestaña.activa {color:var(--primario); border-bottom-color:var(--primario); font-weight:600; background:#2a2a2a;}
         .form-grupo {display:none;}
         .form-grupo.activo {display:block;}
-        input {width:100%; padding:12px; border-radius:10px; border:2px solid #333; background:#2a2a2a; color:white; font-size:1rem; margin-bottom:12px; outline:none;}
-        input:focus {border-color:var(--primario);}
+        input[type="url"] {width:100%; padding:12px; border-radius:10px; border:2px solid #333; background:#2a2a2a; color:white; font-size:1rem; margin-bottom:12px; outline:none;}
+        input[type="url"]:focus {border-color:var(--primario);}
         .btn-principal {width:100%; padding:12px; border-radius:10px; border:none; background:var(--primario); color:white; font-size:1rem; font-weight:600; cursor:pointer; transition:.2s;}
         .btn-principal:hover {background:#cc0000;}
         .contenedor-secciones {max-width:1300px; margin:0 auto;}
@@ -54,34 +54,29 @@
         .barra-btn.activo {color:var(--primario);}
         .barra-btn svg {width:22px; height:22px;}
         .aviso {font-size:0.8rem; color:#888; margin-top:8px; text-align:center;}
-        .campo-opcional {font-size:0.8rem; color:#888; margin-bottom:8px;}
     </style>
 </head>
 <body>
     <header>
         <h1>🚀 Youtubers Creciendo</h1>
-        <p class="subtitulo">Comunidad de creadores — Puntos: 10 (Canal) · 15 (Short) 🌍</p>
-        <p class="aviso">⏱️ El contenido se elimina automáticamente a las 2 horas · Solo puedes dar like 1 vez</p>
+        <p class="subtitulo">Solo pega tu enlace — el nombre y la foto se cargan solos ✨</p>
+        <p class="aviso">⏱️ Se elimina a las 2 horas · 1 like por persona</p>
     </header>
 
     <section class="contenedor-subida">
         <h2>📤 Pega tu enlace y ¡compártelo!</h2>
         <div class="pestañas">
             <button class="pestaña activa" onclick="cambiarPestaña('canal')">👤 Canal</button>
-            <button class="pestaña" onclick="cambiarPestaña('video')">🎬 Video</button>
+            <button class="pestaña" onclick="cambiarPestaña('video')">🎬 Video / Short</button>
         </div>
         <div class="form-grupo activo" id="form-canal">
-            <input type="text" id="nombreCanal" placeholder="📝 Nombre de tu canal (ej: Thorn Eldritch)">
-            <input type="url" id="enlaceCanal" placeholder="🔗 Enlace del canal: youtube.com/@TuCanal">
-            <input type="url" id="fotoCanal" placeholder="🖼️ URL de tu foto de perfil de YouTube (opcional)">
-            <p class="campo-opcional">💡 Si no pones foto, se generará una automática con la inicial</p>
+            <input type="url" id="enlaceCanal" placeholder="youtube.com/@TuCanal o youtube.com/channel/...">
             <button class="btn-principal" onclick="agregarCanal()">➕ Publicar Canal (+10 pts)</button>
         </div>
         <div class="form-grupo" id="form-video">
-            <input type="url" id="enlaceVideo" placeholder="🔗 Enlace del video: youtube.com/watch?v=... o youtu.be/...">
+            <input type="url" id="enlaceVideo" placeholder="youtube.com/watch?v=... o youtu.be/... o /shorts/...">
             <button class="btn-principal" onclick="agregarVideo()">➕ Publicar Video (+15 pts si es Short)</button>
         </div>
-        <p class="aviso">⚠️ El contenido se elimina automáticamente después de 2 horas</p>
     </section>
 
     <main class="contenedor-secciones">
@@ -95,7 +90,7 @@
         </section>
     </main>
 
-    <footer><p>© 2026 Youtubers Creciendo — Suscríbete desde YouTube ✅ · 1 like por persona</p></footer>
+    <footer><p>© 2026 Youtubers Creciendo — Solo pega tu enlace, el resto se carga automáticamente ✨</p></footer>
 
     <div class="barra-inferior">
         <button class="barra-btn activo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
@@ -125,17 +120,13 @@
             measurementId: "G-0NHZJ584T7"
         };
 
-        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // 🔑 IDENTIFICADOR ÚNICO del dispositivo para controlar likes
-        const DISPOSITIVO_ID = localStorage.getItem('dispositivo_id') || generarIdDispositivo();
-        localStorage.setItem('dispositivo_id', DISPOSITIVO_ID);
-
-        function generarIdDispositivo() {
-            return 'usr_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-        }
+        // 🔑 ID del dispositivo para controlar likes
+        const DISPOSITIVO_ID = localStorage.getItem('dispositivo_id') || 
+            (localStorage.setItem('dispositivo_id', 'usr_' + Math.random().toString(36).slice(2) + Date.now()), 
+             localStorage.getItem('dispositivo_id'));
 
         // Cambiar pestaña
         function cambiarPestaña(tipo) {
@@ -145,153 +136,159 @@
             document.getElementById(`form-${tipo}`).classList.add('activo');
         }
 
-        // Extraer IDs
-        function obtenerIdCanal(url) {
-            if (url.includes('/channel/')) return url.split('/channel/')[1].split('/')[0].split('?')[0];
-            if (url.includes('/@')) return '@' + url.split('/@')[1].split('/')[0].split('?')[0];
-            return null;
+        // 🧠 EXTRAER NOMBRE Y FOTO DEL ENLACE — AUTOMÁTICO ✨
+        function analizarEnlaceCanal(url) {
+            let nombre = "Canal de YouTube";
+            let avatar = "";
+            let canalId = "";
+
+            // Formato: youtube.com/@NombreCanal
+            if (url.includes('/@')) {
+                const match = url.match(/\/@([a-zA-Z0-9_\-\.]+)/);
+                if (match && match[1]) {
+                    nombre = match[1];
+                    canalId = '@' + match[1];
+                }
+            }
+            // Formato: youtube.com/channel/ABC123...
+            else if (url.includes('/channel/')) {
+                const match = url.match(/\/channel\/([a-zA-Z0-9_\-]+)/);
+                if (match && match[1]) {
+                    canalId = match[1];
+                    nombre = "Canal " + match[1].slice(0, 8);
+                }
+            }
+            // Formato: youtube.com/c/Nombre o youtube.com/user/Nombre
+            else if (url.includes('/c/') || url.includes('/user/')) {
+                const match = url.match(/\/(c|user)\/([a-zA-Z0-9_\-]+)/);
+                if (match && match[2]) {
+                    nombre = match[2];
+                    canalId = match[2];
+                }
+            }
+
+            // Generar foto con la inicial del nombre
+            const inicial = nombre.charAt(0).toUpperCase();
+            avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(inicial)}&background=ff0000&color=fff&size=200&bold=true`;
+
+            // Si es un @, intentar obtener la foto real del canal (usando servicio público)
+            if (canalId.startsWith('@')) {
+                avatar = `https://yt3.googleusercontent.com/ytc/AIdro_nK07_default=s200-c-k-c0x00ffffff-no-rj`;
+            }
+
+            return { nombre, avatar, canalId };
         }
-        function obtenerIdVideo(url) {
-            if (url.includes('youtube.com/watch')) return new URLSearchParams(new URL(url).search).get('v');
-            if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
-            if (url.includes('/shorts/')) return url.split('/shorts/')[1].split('/')[0].split('?')[0];
-            return null;
+
+        function analizarEnlaceVideo(url) {
+            let videoId = null;
+            let esCorto = false;
+
+            if (url.includes('youtube.com/watch')) {
+                const params = new URLSearchParams(new URL(url).search);
+                videoId = params.get('v');
+            } else if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1].split('?')[0];
+            } else if (url.includes('/shorts/')) {
+                videoId = url.split('/shorts/')[1].split('/')[0].split('?')[0];
+                esCorto = true;
+            }
+
+            return { videoId, esCorto };
         }
-        function esShortUrl(url) { return url.includes('/shorts/'); }
 
         // ⏱️ Tiempo de expiración: 2 horas
         const TIEMPO_EXPIRACION = 2 * 60 * 60 * 1000;
-
         function yaExpirado(fecha) {
             if (!fecha) return false;
-            const fechaCreacion = fecha.toDate ? fecha.toDate() : new Date(fecha);
-            return Date.now() - fechaCreacion.getTime() > TIEMPO_EXPIRACION;
+            const f = fecha.toDate ? fecha.toDate() : new Date(fecha);
+            return Date.now() - f.getTime() > TIEMPO_EXPIRACION;
         }
-
         function tiempoRestante(fecha) {
             if (!fecha) return "--";
-            const fechaCreacion = fecha.toDate ? fecha.toDate() : new Date(fecha);
-            const restante = TIEMPO_EXPIRACION - (Date.now() - fechaCreacion.getTime());
-            if (restante <= 0) return "Expirado";
-            const horas = Math.floor(restante / (1000 * 60 * 60));
-            const minutos = Math.floor((restante % (1000 * 60 * 60)) / (1000 * 60));
-            return `${horas}h ${minutos}m`;
+            const f = fecha.toDate ? fecha.toDate() : new Date(fecha);
+            const r = TIEMPO_EXPIRACION - (Date.now() - f.getTime());
+            if (r <= 0) return "Expirado";
+            const h = Math.floor(r / 3600000);
+            const m = Math.floor((r % 3600000) / 60000);
+            return `${h}h ${m}m`;
         }
 
         // 🔄 CARGA EN TIEMPO REAL
         document.addEventListener('DOMContentLoaded', () => {
-            db.collection('perfiles')
-                .orderBy('fecha', 'desc')
-                .onSnapshot(snapshot => {
-                    const perfiles = snapshot.docs
-                        .filter(doc => !yaExpirado(doc.data().fecha))
-                        .map(doc => ({id: doc.id, ...doc.data()}));
-                    renderizarPerfiles(perfiles);
-                }, err => console.error("Error perfiles:", err));
-
-            db.collection('videos')
-                .orderBy('fecha', 'desc')
-                .onSnapshot(snapshot => {
-                    const videos = snapshot.docs
-                        .filter(doc => !yaExpirado(doc.data().fecha))
-                        .map(doc => ({id: doc.id, ...doc.data()}));
-                    renderizarVideos(videos);
-                }, err => console.error("Error videos:", err));
+            db.collection('perfiles').orderBy('fecha', 'desc').onSnapshot(s => {
+                renderizarPerfiles(s.docs.filter(d => !yaExpirado(d.data().fecha)).map(d => ({id:d.id, ...d.data()})));
+            });
+            db.collection('videos').orderBy('fecha', 'desc').onSnapshot(s => {
+                renderizarVideos(s.docs.filter(d => !yaExpirado(d.data().fecha)).map(d => ({id:d.id, ...d.data()})));
+            });
         });
 
-        // ➕ AGREGAR CANAL — AHORA CON NOMBRE Y FOTO PERSONALIZADOS
+        // ➕ AGREGAR CANAL — SOLO CON EL ENLACE ✨
         async function agregarCanal() {
-            const nombre = document.getElementById('nombreCanal').value.trim();
             const url = document.getElementById('enlaceCanal').value.trim();
-            const fotoUrl = document.getElementById('fotoCanal').value.trim();
-
-            if (!nombre) return alert('Escribe el nombre de tu canal 📝');
             if (!url) return alert('Pega el enlace del canal 🔗');
-            const id = obtenerIdCanal(url);
-            if (!id) return alert('Enlace no válido. Ej: youtube.com/@NombreCanal');
-
-            // Foto personalizada o generada con la inicial
-            let avatar;
-            if (fotoUrl && fotoUrl.startsWith('http')) {
-                avatar = fotoUrl;
-            } else {
-                avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre[0])}&background=ff0000&color=fff&size=200&bold=true`;
-            }
+            
+            const { nombre, avatar, canalId } = analizarEnlaceCanal(url);
+            if (!canalId) return alert('Enlace no válido. Ej: youtube.com/@TuCanal');
 
             await db.collection('perfiles').add({
-                url, canalId: id, nombre, avatar,
+                url, canalId, nombre, avatar,
                 suscriptores: 'Público', puntos: 10, likes: 0,
                 usuariosQueDieronLike: [],
                 fecha: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // Limpiar campos
-            document.getElementById('nombreCanal').value = '';
             document.getElementById('enlaceCanal').value = '';
-            document.getElementById('fotoCanal').value = '';
-            alert(`✅ Canal "${nombre}" publicado con su foto! 📸`);
+            alert(`✅ Canal "${nombre}" publicado! 🎉`);
         }
 
-        // ➕ AGREGAR VIDEO
+        // ➕ AGREGAR VIDEO — SOLO CON EL ENLACE ✨
         async function agregarVideo() {
             const url = document.getElementById('enlaceVideo').value.trim();
-            if (!url) return alert('Pega el enlace del video');
-            const id = obtenerIdVideo(url);
-            if (!id) return alert('Enlace no válido');
-            const corto = esShortUrl(url);
+            if (!url) return alert('Pega el enlace del video 🔗');
+            
+            const { videoId, esCorto } = analizarEnlaceVideo(url);
+            if (!videoId) return alert('Enlace no válido');
 
             await db.collection('videos').add({
-                url, videoId: id, titulo: 'Video de YouTube',
-                canal: 'Comunidad', esCorto: corto,
-                embedUrl: `https://www.youtube.com/embed/${id}?rel=0`,
-                puntos: corto ? 15 : 10, likes: 0,
+                url, videoId, titulo: esCorto ? 'Short de YouTube' : 'Video de YouTube',
+                canal: 'Comunidad', esCorto,
+                embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0`,
+                puntos: esCorto ? 15 : 10, likes: 0,
                 usuariosQueDieronLike: [],
                 fecha: firebase.firestore.FieldValue.serverTimestamp()
             });
+
             document.getElementById('enlaceVideo').value = '';
-            alert(`✅ Video publicado! Puntos: ${corto ? 15 : 10}`);
+            alert(`✅ ${esCorto ? 'Short' : 'Video'} publicado! +${esCorto ? 15 : 10} pts 🎉`);
         }
 
-        // ❤️ DAR LIKE — CONTROLADO: SOLO 1 VEZ POR DISPOSITIVO
+        // ❤️ LIKE — 1 vez por persona
         async function darLikePerfil(id, btn) {
             if (btn.classList.contains('activo')) return;
-            
-            const docRef = db.collection('perfiles').doc(id);
-            const doc = await docRef.get();
+            const ref = db.collection('perfiles').doc(id);
+            const doc = await ref.get();
             const datos = doc.data() || {};
-            const yaDioLike = (datos.usuariosQueDieronLike || []).includes(DISPOSITIVO_ID);
-            
-            if (yaDioLike) {
-                btn.classList.add('activo');
-                return alert('⚠️ Ya diste like a este canal! Solo puedes dar 1 like');
-            }
-
-            await docRef.update({
+            const ya = (datos.usuariosQueDieronLike || []).includes(DISPOSITIVO_ID);
+            if (ya) return btn.classList.add('activo'), alert('⚠️ Ya diste like!');
+            await ref.update({
                 likes: (datos.likes || 0) + 1,
                 usuariosQueDieronLike: firebase.firestore.FieldValue.arrayUnion(DISPOSITIVO_ID)
             });
-            
             btn.classList.add('activo');
         }
 
         async function darLikeVideo(id, btn) {
             if (btn.classList.contains('activo')) return;
-            
-            const docRef = db.collection('videos').doc(id);
-            const doc = await docRef.get();
+            const ref = db.collection('videos').doc(id);
+            const doc = await ref.get();
             const datos = doc.data() || {};
-            const yaDioLike = (datos.usuariosQueDieronLike || []).includes(DISPOSITIVO_ID);
-            
-            if (yaDioLike) {
-                btn.classList.add('activo');
-                return alert('⚠️ Ya diste like a este video! Solo puedes dar 1 like');
-            }
-
-            await docRef.update({
+            const ya = (datos.usuariosQueDieronLike || []).includes(DISPOSITIVO_ID);
+            if (ya) return btn.classList.add('activo'), alert('⚠️ Ya diste like!');
+            await ref.update({
                 likes: (datos.likes || 0) + 1,
                 usuariosQueDieronLike: firebase.firestore.FieldValue.arrayUnion(DISPOSITIVO_ID)
             });
-            
             btn.classList.add('activo');
         }
 
