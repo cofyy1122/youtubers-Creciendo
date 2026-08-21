@@ -18,8 +18,8 @@
         .pestaña.activa {color:var(--primario); border-bottom-color:var(--primario); font-weight:600; background:#2a2a2a;}
         .form-grupo {display:none;}
         .form-grupo.activo {display:block;}
-        input[type="url"] {width:100%; padding:12px; border-radius:10px; border:2px solid #333; background:#2a2a2a; color:white; font-size:1rem; margin-bottom:12px; outline:none;}
-        input[type="url"]:focus {border-color:var(--primario);}
+        input {width:100%; padding:12px; border-radius:10px; border:2px solid #333; background:#2a2a2a; color:white; font-size:1rem; margin-bottom:12px; outline:none;}
+        input:focus {border-color:var(--primario);}
         .btn-principal {width:100%; padding:12px; border-radius:10px; border:none; background:var(--primario); color:white; font-size:1rem; font-weight:600; cursor:pointer; transition:.2s;}
         .btn-principal:hover {background:#cc0000;}
         .contenedor-secciones {max-width:1300px; margin:0 auto;}
@@ -30,7 +30,7 @@
         .tarjeta-perfil:hover, .tarjeta-video:hover {transform:translateY(-3px); box-shadow:0 6px 20px rgba(255,0,0,.25);}
         .perfil-cabecera {padding:20px; text-align:center; background:linear-gradient(135deg,#2a2a2a,#1a1a1a);}
         .perfil-avatar {width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--primario); margin-bottom:10px; background:#333;}
-        .perfil-nombre {font-size:1.2rem; margin-bottom:5px;}
+        .perfil-nombre {font-size:1.2rem; margin-bottom:5px; font-weight:600;}
         .puntuacion {display:inline-block; background:var(--acento); color:#000; padding:3px 10px; border-radius:20px; font-weight:bold; font-size:.85rem; margin-top:6px;}
         .perfil-info {padding:15px;}
         .suscriptores {color:#aaa; font-size:.9rem; margin-bottom:12px;}
@@ -54,13 +54,14 @@
         .barra-btn.activo {color:var(--primario);}
         .barra-btn svg {width:22px; height:22px;}
         .aviso {font-size:0.8rem; color:#888; margin-top:8px; text-align:center;}
+        .campo-opcional {font-size:0.8rem; color:#888; margin-bottom:8px;}
     </style>
 </head>
 <body>
     <header>
         <h1>🚀 Youtubers Creciendo</h1>
         <p class="subtitulo">Comunidad de creadores — Puntos: 10 (Canal) · 15 (Short) 🌍</p>
-        <p class="aviso">⏱️ El contenido se elimina automáticamente a las 2 horas</p>
+        <p class="aviso">⏱️ El contenido se elimina automáticamente a las 2 horas · Solo puedes dar like 1 vez</p>
     </header>
 
     <section class="contenedor-subida">
@@ -70,14 +71,17 @@
             <button class="pestaña" onclick="cambiarPestaña('video')">🎬 Video</button>
         </div>
         <div class="form-grupo activo" id="form-canal">
-            <input type="url" id="enlaceCanal" placeholder="youtube.com/@TuCanal">
+            <input type="text" id="nombreCanal" placeholder="📝 Nombre de tu canal (ej: Thorn Eldritch)">
+            <input type="url" id="enlaceCanal" placeholder="🔗 Enlace del canal: youtube.com/@TuCanal">
+            <input type="url" id="fotoCanal" placeholder="🖼️ URL de tu foto de perfil de YouTube (opcional)">
+            <p class="campo-opcional">💡 Si no pones foto, se generará una automática con la inicial</p>
             <button class="btn-principal" onclick="agregarCanal()">➕ Publicar Canal (+10 pts)</button>
         </div>
         <div class="form-grupo" id="form-video">
-            <input type="url" id="enlaceVideo" placeholder="youtube.com/watch?v=... o youtu.be/...">
+            <input type="url" id="enlaceVideo" placeholder="🔗 Enlace del video: youtube.com/watch?v=... o youtu.be/...">
             <button class="btn-principal" onclick="agregarVideo()">➕ Publicar Video (+15 pts si es Short)</button>
         </div>
-        <p class="aviso">⚠️ El contenido se elimina automáticamente después de 2 horas · Solo puedes dar like 1 vez</p>
+        <p class="aviso">⚠️ El contenido se elimina automáticamente después de 2 horas</p>
     </section>
 
     <main class="contenedor-secciones">
@@ -195,24 +199,37 @@
                 }, err => console.error("Error videos:", err));
         });
 
-        // ➕ AGREGAR CANAL
+        // ➕ AGREGAR CANAL — AHORA CON NOMBRE Y FOTO PERSONALIZADOS
         async function agregarCanal() {
+            const nombre = document.getElementById('nombreCanal').value.trim();
             const url = document.getElementById('enlaceCanal').value.trim();
-            if (!url) return alert('Pega el enlace del canal');
+            const fotoUrl = document.getElementById('fotoCanal').value.trim();
+
+            if (!nombre) return alert('Escribe el nombre de tu canal 📝');
+            if (!url) return alert('Pega el enlace del canal 🔗');
             const id = obtenerIdCanal(url);
             if (!id) return alert('Enlace no válido. Ej: youtube.com/@NombreCanal');
 
-            const nombre = id.startsWith('@') ? id.slice(1) : `Canal ${id.slice(0,8)}`;
-            const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre[0])}&background=ff0000&color=fff&size=100`;
+            // Foto personalizada o generada con la inicial
+            let avatar;
+            if (fotoUrl && fotoUrl.startsWith('http')) {
+                avatar = fotoUrl;
+            } else {
+                avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre[0])}&background=ff0000&color=fff&size=200&bold=true`;
+            }
 
             await db.collection('perfiles').add({
                 url, canalId: id, nombre, avatar,
                 suscriptores: 'Público', puntos: 10, likes: 0,
-                usuariosQueDieronLike: [], // Para controlar 1 like por persona
+                usuariosQueDieronLike: [],
                 fecha: firebase.firestore.FieldValue.serverTimestamp()
             });
+
+            // Limpiar campos
+            document.getElementById('nombreCanal').value = '';
             document.getElementById('enlaceCanal').value = '';
-            alert('✅ Canal publicado! Todos lo verán');
+            document.getElementById('fotoCanal').value = '';
+            alert(`✅ Canal "${nombre}" publicado con su foto! 📸`);
         }
 
         // ➕ AGREGAR VIDEO
@@ -228,7 +245,7 @@
                 canal: 'Comunidad', esCorto: corto,
                 embedUrl: `https://www.youtube.com/embed/${id}?rel=0`,
                 puntos: corto ? 15 : 10, likes: 0,
-                usuariosQueDieronLike: [], // Para controlar 1 like por persona
+                usuariosQueDieronLike: [],
                 fecha: firebase.firestore.FieldValue.serverTimestamp()
             });
             document.getElementById('enlaceVideo').value = '';
@@ -237,7 +254,7 @@
 
         // ❤️ DAR LIKE — CONTROLADO: SOLO 1 VEZ POR DISPOSITIVO
         async function darLikePerfil(id, btn) {
-            if (btn.classList.contains('activo')) return; // Ya dio like
+            if (btn.classList.contains('activo')) return;
             
             const docRef = db.collection('perfiles').doc(id);
             const doc = await docRef.get();
@@ -249,7 +266,6 @@
                 return alert('⚠️ Ya diste like a este canal! Solo puedes dar 1 like');
             }
 
-            // Registrar el like
             await docRef.update({
                 likes: (datos.likes || 0) + 1,
                 usuariosQueDieronLike: firebase.firestore.FieldValue.arrayUnion(DISPOSITIVO_ID)
@@ -259,7 +275,7 @@
         }
 
         async function darLikeVideo(id, btn) {
-            if (btn.classList.contains('activo')) return; // Ya dio like
+            if (btn.classList.contains('activo')) return;
             
             const docRef = db.collection('videos').doc(id);
             const doc = await docRef.get();
@@ -271,7 +287,6 @@
                 return alert('⚠️ Ya diste like a este video! Solo puedes dar 1 like');
             }
 
-            // Registrar el like
             await docRef.update({
                 likes: (datos.likes || 0) + 1,
                 usuariosQueDieronLike: firebase.firestore.FieldValue.arrayUnion(DISPOSITIVO_ID)
@@ -290,7 +305,7 @@
                 <div class="tarjeta-perfil">
                     <span class="etiqueta-tiempo">⏱️ ${tiempoRestante(p.fecha)}</span>
                     <div class="perfil-cabecera">
-                        <img src="${p.avatar}" alt="${p.nombre}" class="perfil-avatar">
+                        <img src="${p.avatar}" alt="${p.nombre}" class="perfil-avatar" loading="lazy">
                         <h3 class="perfil-nombre">${p.nombre}</h3>
                         <span class="puntuacion">+${p.puntos} pts</span>
                     </div>
