@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Youtubers Creciendo 🌍</title>
+    <style>
+        * {margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif;}
+        :root {--primario: #ff0000; --fondo: #0f0f0f; --tarjeta: #1f1f1f; --texto: #f1f1f1; --acento: #ffcc00; --exito: #25d366;}
+        body {background:var(--fondo); color:var(--texto); min-height:100vh; padding:15px; padding-bottom:80px;}
+        header {text-align:center; padding:25px 15px; border-bottom:2px solid var(--primario); margin-bottom:25px;}
+        h1 {font-size:1.8rem; color:var(--primario); margin-bottom:8px;}
+        .subtitulo {color:#aaa; font-size:0.9rem; max-width:600px; margin:0 auto;}
+        .contenedor-subida {background:var(--tarjeta); padding:20px; border-radius:15px; max-width:650px; margin:0 auto 30px; box-shadow:0 4px 20px rgba(255,0,0,.2);}
+        .contenedor-subida h2 {color:var(--acento); text-align:center; margin-bottom:15px; font-size:1.2rem;}
+        .pestañas {display:flex; gap:8px; margin-bottom:15px; border-bottom:1px solid #333;}
+        .pestaña {padding:10px 18px; background:transparent; border:none; color:#aaa; font-size:0.95rem; cursor:pointer; border-bottom:3px solid transparent; border-radius:8px 8px 0 0;}
+        .pestaña.activa {color:var(--primario); border-bottom-color:var(--primario); font-weight:600; background:#2a2a2a;}
+        .form-grupo {display:none;}
+        .form-grupo.activo {display:block;}
+        input[type="url"] {width:100%; padding:12px; border-radius:10px; border:2px solid #333; background:#2a2a2a; color:white; font-size:1rem; margin-bottom:12px; outline:none;}
+        input[type="url"]:focus {border-color:var(--primario);}
+        .btn-principal {width:100%; padding:12px; border-radius:10px; border:none; background:var(--primario); color:white; font-size:1rem; font-weight:600; cursor:pointer; transition:.2s;}
+        .btn-principal:hover {background:#cc0000;}
+        .contenedor-secciones {max-width:1300px; margin:0 auto;}
+        .seccion {margin-bottom:40px;}
+        .seccion-titulo {font-size:1.4rem; margin-bottom:18px; padding-left:12px; border-left:4px solid var(--acento);}
+        .grid {display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px;}
+        .tarjeta-perfil, .tarjeta-video {background:var(--tarjeta); border-radius:12px; overflow:hidden; transition:.3s;}
+        .tarjeta-perfil:hover, .tarjeta-video:hover {transform:translateY(-3px); box-shadow:0 6px 20px rgba(255,0,0,.25);}
+        .perfil-cabecera {padding:20px; text-align:center; background:linear-gradient(135deg,#2a2a2a,#1a1a1a);}
+        .perfil-avatar {width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--primario); margin-bottom:10px; background:#333;}
+        .perfil-nombre {font-size:1.2rem; margin-bottom:5px;}
+        .puntuacion {display:inline-block; background:var(--acento); color:#000; padding:3px 10px; border-radius:20px; font-weight:bold; font-size:.85rem; margin-top:6px;}
+        .perfil-info {padding:15px;}
+        .suscriptores {color:#aaa; font-size:.9rem; margin-bottom:12px;}
+        .btn-suscribir {width:100%; padding:10px; border-radius:8px; border:none; background:var(--primario); color:white; font-weight:600; cursor:pointer; font-size:.9rem; margin-bottom:10px; transition:.2s;}
+        .btn-suscribir:hover {background:#cc0000;}
+        .video-contenedor {position:relative; width:100%; padding-top:56.25%; background:#000;}
+        .video-iframe {position:absolute; top:0; left:0; width:100%; height:100%; border:none;}
+        .video-cuerpo {padding:15px;}
+        .video-titulo {font-size:1rem; margin-bottom:6px; line-height:1.4;}
+        .video-canal {color:#aaa; font-size:.85rem; margin-bottom:8px;}
+        .etiqueta-corto {display:inline-block; background:var(--exito); color:white; font-size:.7rem; padding:2px 7px; border-radius:10px; margin-left:6px;}
+        .acciones {display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap;}
+        .btn-like {display:flex; align-items:center; gap:4px; padding:7px 12px; border-radius:20px; border:none; background:#333; color:white; cursor:pointer; font-size:.85rem; transition:.2s;}
+        .btn-like.activo {background:var(--primario);}
+        .btn-ver-canal {padding:7px 12px; border-radius:20px; border:none; background:var(--acento); color:#000; text-decoration:none; font-size:.85rem; font-weight:500;}
+        .vacio {text-align:center; padding:40px; color:#666; font-size:1rem;}
+        footer {text-align:center; margin-top:50px; padding:15px; color:#555; border-top:1px solid #333; font-size:.85rem;}
+        .cargando {text-align:center; padding:15px; color:var(--acento); font-style:italic;}
+        .barra-inferior {position:fixed; bottom:0; left:0; right:0; background:var(--tarjeta); padding:10px 0; display:flex; justify-content:space-around; border-top:1px solid #333; z-index:100;}
+        .barra-btn {background:none; border:none; color:#aaa; font-size:.8rem; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;}
+        .barra-btn.activo {color:var(--primario);}
+        .barra-btn svg {width:22px; height:22px;}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🚀 Youtubers Creciendo</h1>
+        <p class="subtitulo">Comunidad de creadores — Puntos: 10 (Canal) · 15 (Short) 🌍</p>
+    </header>
+
+    <section class="contenedor-subida">
+        <h2>📤 Pega tu enlace y ¡compártelo!</h2>
+        <div class="pestañas">
+            <button class="pestaña activa" onclick="cambiarPestaña('canal')">👤 Canal</button>
+            <button class="pestaña" onclick="cambiarPestaña('video')">🎬 Video</button>
+        </div>
+        <div class="form-grupo activo" id="form-canal">
+            <input type="url" id="enlaceCanal" placeholder="youtube.com/@TuCanal">
+            <button class="btn-principal" onclick="agregarCanal()">➕ Publicar Canal (+10 pts)</button>
+        </div>
+        <div class="form-grupo" id="form-video">
+            <input type="url" id="enlaceVideo" placeholder="youtube.com/watch?v=... o youtu.be/...">
+            <button class="btn-principal" onclick="agregarVideo()">➕ Publicar Video (+15 pts si es Short)</button>
+        </div>
+    </section>
+
+    <main class="contenedor-secciones">
+        <section class="seccion">
+            <h2 class="seccion-titulo">👤 Canales</h2>
+            <div class="grid" id="contenedorPerfiles"><p class="cargando">Cargando...</p></div>
+        </section>
+        <section class="seccion">
+            <h2 class="seccion-titulo">🎬 Videos y Shorts</h2>
+            <div class="grid" id="contenedorVideos"><p class="cargando">Cargando...</p></div>
+        </section>
+    </main>
+
+    <footer><p>© 2026 Youtubers Creciendo — Suscríbete desde YouTube ✅</p></footer>
+
+    <!-- Barra inferior móvil -->
+    <div class="barra-inferior">
+        <button class="barra-btn activo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            Inicio
+        </button>
+        <button class="barra-btn" onclick="document.getElementById('enlaceCanal').focus()">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg>
+            Subir
+        </button>
+        <button class="barra-btn" onclick="document.querySelector('.seccion-titulo').scrollIntoView({behavior:'smooth'})">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+            Ver todo
+        </button>
+    </div>
+
+    <!-- FIREBASE SDK - Usamos la versión compat (más fácil para ti) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // 👇 TU CONFIGURACIÓN DE FIREBASE — ¡YA ESTÁ PUESTA! 👇
+        const firebaseConfig = {
+            apiKey: "AIzaSyAD0kJ896Z-xP6aR_ABRPG59tsEGkK8-Rg",
+            authDomain: "pruebas-4c196.firebaseapp.com",
+            databaseURL: "https://pruebas-4c196-default-rtdb.firebaseio.com",
+            projectId: "pruebas-4c196",
+            storageBucket: "pruebas-4c196.firebasestorage.app",
+            messagingSenderId: "125176141902",
+            appId: "1:125176141902:web:2daa289a04fa58576b8b1f",
+            measurementId: "G-0NHZJ584T7"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Cambiar pestaña
+        function cambiarPestaña(tipo) {
+            document.querySelectorAll('.pestaña').forEach(p => p.classList.remove('activa'));
+            document.querySelectorAll('.form-grupo').forEach(f => f.classList.remove('activo'));
+            event.target.classList.add('activa');
+            document.getElementById(`form-${tipo}`).classList.add('activo');
+        }
+
+        // Extraer IDs
+        function obtenerIdCanal(url) {
+            if (url.includes('/channel/')) return url.split('/channel/')[1].split('/')[0].split('?')[0];
+            if (url.includes('/@')) return '@' + url.split('/@')[1].split('/')[0].split('?')[0];
+            return null;
+        }
+        function obtenerIdVideo(url) {
+            if (url.includes('youtube.com/watch')) return new URLSearchParams(new URL(url).search).get('v');
+            if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
+            if (url.includes('/shorts/')) return url.split('/shorts/')[1].split('/')[0].split('?')[0];
+            return null;
+        }
+        function esShortUrl(url) { return url.includes('/shorts/'); }
+
+        // 🔄 CARGA EN TIEMPO REAL — Todo se actualiza solo para todos
+        document.addEventListener('DOMContentLoaded', () => {
+            db.collection('perfiles').orderBy('fecha', 'desc').onSnapshot(snapshot => {
+                renderizarPerfiles(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()})));
+            });
+            db.collection('videos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
+                renderizarVideos(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()})));
+            });
+        });
+
+        // ➕ AGREGAR CANAL
+        async function agregarCanal() {
+            const url = document.getElementById('enlaceCanal').value.trim();
+            if (!url) return alert('Pega el enlace del canal');
+            const id = obtenerIdCanal(url);
+            if (!id) return alert('Enlace no válido. Ej: youtube.com/@NombreCanal');
+
+            const nombre = id.startsWith('@') ? id.slice(1) : `Canal ${id.slice(0,8)}`;
+            const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre[0])}&background=ff0000&color=fff&size=100`;
+
+            await db.collection('perfiles').add({
+                url, canalId: id, nombre, avatar,
+                suscriptores: 'Público', puntos: 10, likes: 0,
+                fecha: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            document.getElementById('enlaceCanal').value = '';
+            alert('✅ Canal publicado! Todos lo verán');
+        }
+
+        // ➕ AGREGAR VIDEO
+        async function agregarVideo() {
+            const url = document.getElementById('enlaceVideo').value.trim();
+            if (!url) return alert('Pega el enlace del video');
+            const id = obtenerIdVideo(url);
+            if (!id) return alert('Enlace no válido');
+            const corto = esShortUrl(url);
+
+            await db.collection('videos').add({
+                url, videoId: id, titulo: 'Video de YouTube',
+                canal: 'Comunidad', esCorto: corto,
+                embedUrl: `https://www.youtube.com/embed/${id}?rel=0`,
+                puntos: corto ? 15 : 10, likes: 0,
+                fecha: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            document.getElementById('enlaceVideo').value = '';
+            alert(`✅ Video publicado! Puntos: ${corto ? 15 : 10}`);
+        }
+
+        // ❤️ DAR LIKE
+        async function darLikePerfil(id, btn) {
+            const docRef = db.collection('perfiles').doc(id);
+            const doc = await docRef.get();
+            await docRef.update({ likes: (doc.data().likes || 0) + 1 });
+            btn.classList.add('activo');
+        }
+        async function darLikeVideo(id, btn) {
+            const docRef = db.collection('videos').doc(id);
+            const doc = await docRef.get();
+            await docRef.update({ likes: (doc.data().likes || 0) + 1 });
+            btn.classList.add('activo');
+        }
+
+        // 🎨 RENDERIZAR
+        function renderizarPerfiles(lista) {
+            const c = document.getElementById('contenedorPerfiles');
+            if (!lista.length) return c.innerHTML = '<p class="vacio">Sin canales. ¡Sé el primero! 👆</p>';
+            c.innerHTML = lista.map(p => `
+                <div class="tarjeta-perfil">
+                    <div class="perfil-cabecera">
+                        <img src="${p.avatar}" alt="${p.nombre}" class="perfil-avatar">
+                        <h3 class="perfil-nombre">${p.nombre}</h3>
+                        <span class="puntuacion">+${p.puntos} pts</span>
+                    </div>
+                    <div class="perfil-info">
+                        <p class="suscriptores">👥 Suscriptores: ${p.suscriptores}</p>
+                        <a href="${p.url}?sub_confirmation=1" target="_blank" rel="noopener">
+                            <button class="btn-suscribir">🔴 Suscribirse en YouTube</button>
+                        </a>
+                        <div class="acciones">
+                            <button class="btn-like" onclick="darLikePerfil('${p.id}', this)">❤️ <span>${p.likes || 0}</span></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderizarVideos(lista) {
+            const c = document.getElementById('contenedorVideos');
+            if (!lista.length) return c.innerHTML = '<p class="vacio">Sin videos. ¡Sé el primero! 👆</p>';
+            c.innerHTML = lista.map(v => `
+                <div class="tarjeta-video">
+                    <div class="video-contenedor">
+                        <iframe class="video-iframe" src="${v.embedUrl}" title="${v.titulo}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                    <div class="video-cuerpo">
+                        <h3 class="video-titulo">${v.titulo} ${v.esCorto ? '<span class="etiqueta-corto">Short</span>' : ''}</h3>
+                        <p class="video-canal">📺 ${v.canal}</p>
+                        <span class="puntuacion">+${v.puntos} pts</span>
+                        <div class="acciones">
+                            <button class="btn-like" onclick="darLikeVideo('${v.id}', this)">❤️ <span>${v.likes || 0}</span></button>
+                            <a href="${v.url}" target="_blank" rel="noopener" class="btn-ver-canal">▶️ Ver en YouTube</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
