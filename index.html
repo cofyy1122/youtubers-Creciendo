@@ -43,8 +43,8 @@
         .video-canal {color:#aaa; font-size:.85rem; margin-bottom:8px;}
         .etiqueta-corto {display:inline-block; background:var(--exito); color:white; font-size:.7rem; padding:2px 7px; border-radius:10px; margin-left:6px;}
         .acciones {display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap;}
-        .btn-like {display:flex; align-items:center; gap:4px; padding:7px 12px; border-radius:20px; border:none; background:#333; color:white; cursor:pointer; font-size:.85rem; transition:.2s;}
-        .btn-like.activo {background:var(--primario);}
+        .btn-like {display:flex; align-items:center; gap:4px; padding:7px 12px; border-radius:20px; border:none; background:#333; color:white; cursor:pointer; font-size:.85rem; transition:.2s; user-select:none;}
+        .btn-like.activo {background:var(--primario); pointer-events:none; opacity:0.8;}
         .btn-ver-canal {padding:7px 12px; border-radius:20px; border:none; background:var(--acento); color:#000; text-decoration:none; font-size:.85rem; font-weight:500;}
         .vacio {text-align:center; padding:40px; color:#666; font-size:1rem;}
         .etiqueta-tiempo {position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.75); color:#ffcc00; padding:4px 8px; border-radius:15px; font-size:0.75rem;}
@@ -77,7 +77,7 @@
             <input type="url" id="enlaceVideo" placeholder="youtube.com/watch?v=... o youtu.be/...">
             <button class="btn-principal" onclick="agregarVideo()">➕ Publicar Video (+15 pts si es Short)</button>
         </div>
-        <p class="aviso">⚠️ El contenido se elimina automáticamente después de 2 horas</p>
+        <p class="aviso">⚠️ El contenido se elimina automáticamente después de 2 horas · Solo puedes dar like 1 vez</p>
     </section>
 
     <main class="contenedor-secciones">
@@ -91,7 +91,7 @@
         </section>
     </main>
 
-    <footer><p>© 2026 Youtubers Creciendo — Suscríbete desde YouTube ✅</p></footer>
+    <footer><p>© 2026 Youtubers Creciendo — Suscríbete desde YouTube ✅ · 1 like por persona</p></footer>
 
     <div class="barra-inferior">
         <button class="barra-btn activo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
@@ -105,7 +105,7 @@
         </button>
     </div>
 
-    <!-- FIREBASE SIN AUTENTICACIÓN -->
+    <!-- FIREBASE -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
@@ -124,6 +124,14 @@
         // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+
+        // 🔑 IDENTIFICADOR ÚNICO del dispositivo para controlar likes
+        const DISPOSITIVO_ID = localStorage.getItem('dispositivo_id') || generarIdDispositivo();
+        localStorage.setItem('dispositivo_id', DISPOSITIVO_ID);
+
+        function generarIdDispositivo() {
+            return 'usr_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+        }
 
         // Cambiar pestaña
         function cambiarPestaña(tipo) {
@@ -166,7 +174,7 @@
             return `${horas}h ${minutos}m`;
         }
 
-        // 🔄 CARGA EN TIEMPO REAL — Todo se actualiza solo para todos
+        // 🔄 CARGA EN TIEMPO REAL
         document.addEventListener('DOMContentLoaded', () => {
             db.collection('perfiles')
                 .orderBy('fecha', 'desc')
@@ -200,6 +208,7 @@
             await db.collection('perfiles').add({
                 url, canalId: id, nombre, avatar,
                 suscriptores: 'Público', puntos: 10, likes: 0,
+                usuariosQueDieronLike: [], // Para controlar 1 like por persona
                 fecha: firebase.firestore.FieldValue.serverTimestamp()
             });
             document.getElementById('enlaceCanal').value = '';
@@ -219,33 +228,65 @@
                 canal: 'Comunidad', esCorto: corto,
                 embedUrl: `https://www.youtube.com/embed/${id}?rel=0`,
                 puntos: corto ? 15 : 10, likes: 0,
+                usuariosQueDieronLike: [], // Para controlar 1 like por persona
                 fecha: firebase.firestore.FieldValue.serverTimestamp()
             });
             document.getElementById('enlaceVideo').value = '';
             alert(`✅ Video publicado! Puntos: ${corto ? 15 : 10}`);
         }
 
-        // ❤️ DAR LIKE
+        // ❤️ DAR LIKE — CONTROLADO: SOLO 1 VEZ POR DISPOSITIVO
         async function darLikePerfil(id, btn) {
+            if (btn.classList.contains('activo')) return; // Ya dio like
+            
             const docRef = db.collection('perfiles').doc(id);
             const doc = await docRef.get();
-            await docRef.update({ likes: (doc.data().likes || 0) + 1 });
+            const datos = doc.data() || {};
+            const yaDioLike = (datos.usuariosQueDieronLike || []).includes(DISPOSITIVO_ID);
+            
+            if (yaDioLike) {
+                btn.classList.add('activo');
+                return alert('⚠️ Ya diste like a este canal! Solo puedes dar 1 like');
+            }
+
+            // Registrar el like
+            await docRef.update({
+                likes: (datos.likes || 0) + 1,
+                usuariosQueDieronLike: firebase.firestore.FieldValue.arrayUnion(DISPOSITIVO_ID)
+            });
+            
             btn.classList.add('activo');
-            btn.querySelector('span').textContent = (doc.data().likes || 0) + 1;
         }
+
         async function darLikeVideo(id, btn) {
+            if (btn.classList.contains('activo')) return; // Ya dio like
+            
             const docRef = db.collection('videos').doc(id);
             const doc = await docRef.get();
-            await docRef.update({ likes: (doc.data().likes || 0) + 1 });
+            const datos = doc.data() || {};
+            const yaDioLike = (datos.usuariosQueDieronLike || []).includes(DISPOSITIVO_ID);
+            
+            if (yaDioLike) {
+                btn.classList.add('activo');
+                return alert('⚠️ Ya diste like a este video! Solo puedes dar 1 like');
+            }
+
+            // Registrar el like
+            await docRef.update({
+                likes: (datos.likes || 0) + 1,
+                usuariosQueDieronLike: firebase.firestore.FieldValue.arrayUnion(DISPOSITIVO_ID)
+            });
+            
             btn.classList.add('activo');
-            btn.querySelector('span').textContent = (doc.data().likes || 0) + 1;
         }
 
         // 🎨 RENDERIZAR
         function renderizarPerfiles(lista) {
             const c = document.getElementById('contenedorPerfiles');
             if (!lista.length) return c.innerHTML = '<p class="vacio">Sin canales. ¡Sé el primero! 👆</p>';
-            c.innerHTML = lista.map(p => `
+            c.innerHTML = lista.map(p => {
+                const dioLike = (p.usuariosQueDieronLike || []).includes(DISPOSITIVO_ID);
+                return `
                 <div class="tarjeta-perfil">
                     <span class="etiqueta-tiempo">⏱️ ${tiempoRestante(p.fecha)}</span>
                     <div class="perfil-cabecera">
@@ -259,17 +300,19 @@
                             <button class="btn-suscribir">🔴 Suscribirse en YouTube</button>
                         </a>
                         <div class="acciones">
-                            <button class="btn-like" onclick="darLikePerfil('${p.id}', this)">❤️ <span>${p.likes || 0}</span></button>
+                            <button class="btn-like ${dioLike ? 'activo' : ''}" onclick="darLikePerfil('${p.id}', this)">❤️ <span>${p.likes || 0}</span></button>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function renderizarVideos(lista) {
             const c = document.getElementById('contenedorVideos');
             if (!lista.length) return c.innerHTML = '<p class="vacio">Sin videos. ¡Sé el primero! 👆</p>';
-            c.innerHTML = lista.map(v => `
+            c.innerHTML = lista.map(v => {
+                const dioLike = (v.usuariosQueDieronLike || []).includes(DISPOSITIVO_ID);
+                return `
                 <div class="tarjeta-video">
                     <span class="etiqueta-tiempo">⏱️ ${tiempoRestante(v.fecha)}</span>
                     <div class="video-contenedor">
@@ -280,12 +323,12 @@
                         <p class="video-canal">📺 ${v.canal}</p>
                         <span class="puntuacion">+${v.puntos} pts</span>
                         <div class="acciones">
-                            <button class="btn-like" onclick="darLikeVideo('${v.id}', this)">❤️ <span>${v.likes || 0}</span></button>
+                            <button class="btn-like ${dioLike ? 'activo' : ''}" onclick="darLikeVideo('${v.id}', this)">❤️ <span>${v.likes || 0}</span></button>
                             <a href="${v.url}" target="_blank" rel="noopener" class="btn-ver-canal">▶️ Ver en YouTube</a>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
     </script>
 </body>
